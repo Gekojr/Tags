@@ -1,54 +1,39 @@
 # Tags
 
-Paper 26.3 chat nametag plugin for the Geko server.
+Paper 26.3 plugin for multiple selectable chat nametags.
 
-## Included tags
+## Player usage
+
+Use **/tag** to open the nametag inventory.
+
+- Every nametag you own appears as a Minecraft **Name Tag** item.
+- Hovering an item shows its title and selection information.
+- **Right-click** a Name Tag to select it.
+- You can own multiple nametags at the same time.
+- Only the selected nametag appears in chat.
+- Your selected nametag is saved after a restart.
+
+## Admin commands
+
+- `/nametag add <player> <tag>` — give a nametag without removing other nametags.
+- `/nametag remove <player> [tag]` — remove one nametag, or all if no tag is specified.
+- `/nametag get <player>` — show owned and selected nametags.
+- `/nametag list` — list configured nametags.
+- `/nametag reload` — reload configuration.
+
+## Tebex
+
+For a package that grants a nametag, use the console command:
+
+`nametag add {username} donator`
+
+The player can later use **/tag** to choose the nametag.
+
+## Default nametags
 
 - OWNER — dark red
 - CO-OWNER — light red
 - ADMIN — orange
 - DONATOR — cyan
 
-## Commands
-
-Console or players with `tags.admin`:
-
-```
-/nametag set <player> <tag>
-/nametag remove <player>
-/nametag get <player>
-/nametag list
-/nametag reload
-```
-
-Examples:
-
-```
-/nametag set Gekojr18 owner
-/nametag set Player donator
-/nametag remove Player
-```
-
-## Tebex
-
-No Tebex API key is required.
-
-In a Tebex package, add the server command:
-
-```
-nametag set {username} donator
-```
-
-For the other tags:
-
-```
-nametag set {username} admin
-nametag set {username} co-owner
-nametag set {username} owner
-```
-
-This is intended to be run by the server console when Tebex delivers the package.
-
-## Build
-
-The GitHub Actions workflow builds the plugin with Maven and uploads the resulting `Tags.jar` artifact.
+The plugin stores ownership and the selected nametag in `plugins/Tags/data.yml`.
