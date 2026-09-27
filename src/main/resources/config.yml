@@ -14,6 +14,9 @@ tags:
   helper:
     display: "HELPER"
     color: "#32CD32"
+  discord-mod:
+    display: "DISCORD MOD"
+    color: "#00008B"
   donator:
     display: "DONATOR"
     color: "#55FFFF"
