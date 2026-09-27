@@ -1,18 +1,21 @@
 name: Tags
-version: '1.0.0'
+version: '1.1.0'
 main: it.gekojr.tags.TagsPlugin
 api-version: '26.3'
 author: Gekojr
-description: Simple chat nametags with Tebex-friendly commands.
+description: Multiple selectable chat nametags with an in-game selection menu.
 
 commands:
   nametag:
-    description: Manage player chat tags.
-    usage: /nametag <set|remove|get|list|reload>
-    aliases: [tag]
+    description: Manage player nametags.
+    usage: /nametag <add|remove|get|list|reload>
     permission: tags.admin
+  tag:
+    description: Open your nametag selection menu.
+    usage: /tag
+    aliases: [tags]
 
 permissions:
   tags.admin:
-    description: Allows managing chat nametags.
+    description: Allows managing player nametags.
     default: op
