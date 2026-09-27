@@ -8,7 +8,7 @@ description: Multiple selectable chat nametags with an in-game selection menu.
 commands:
   nametag:
     description: Manage player nametags.
-    usage: /nametag <add|remove|get|list|reload>
+    usage: /nametag <add|force|unforce|remove|get|list|reload>
     permission: tags.admin
   tag:
     description: Open your nametag selection menu.
