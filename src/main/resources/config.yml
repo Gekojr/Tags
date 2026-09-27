@@ -13,7 +13,7 @@ tags:
     color: "#FFAA00"
   helper:
     display: "HELPER"
-    color: "#55FF55"
+    color: "#32CD32"
   donator:
     display: "DONATOR"
     color: "#55FFFF"
