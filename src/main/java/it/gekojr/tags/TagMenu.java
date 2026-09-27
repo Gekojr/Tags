@@ -18,8 +18,10 @@ import java.util.List;
 
 public final class TagMenu implements Listener {
     private static final String TITLE = "Your Nametags";
-    private static final int INVENTORY_SIZE = 54;
-    private static final int TAG_SLOTS = 45;
+    private static final int SINGLE_PAGE_SIZE = 27;
+    private static final int SINGLE_PAGE_TAG_SLOTS = 26;
+    private static final int MULTI_PAGE_SIZE = 54;
+    private static final int MULTI_PAGE_TAG_SLOTS = 45;
     private static final int PREVIOUS_SLOT = 45;
     private static final int PAGE_SLOT = 49;
     private static final int NEXT_SLOT = 53;
@@ -36,11 +38,14 @@ public final class TagMenu implements Listener {
 
     private void open(Player player, int requestedPage) {
         List<String> tags = plugin.getTags(player);
-        int totalPages = Math.max(1, (int) Math.ceil(tags.size() / (double) TAG_SLOTS));
+        boolean multiPage = tags.size() > SINGLE_PAGE_TAG_SLOTS;
+        int tagSlots = multiPage ? MULTI_PAGE_TAG_SLOTS : SINGLE_PAGE_TAG_SLOTS;
+        int inventorySize = multiPage ? MULTI_PAGE_SIZE : SINGLE_PAGE_SIZE;
+        int totalPages = Math.max(1, (int) Math.ceil(tags.size() / (double) tagSlots));
         int page = Math.max(0, Math.min(requestedPage, totalPages - 1));
 
-        TagInventory holder = new TagInventory(page);
-        Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE, Component.text(TITLE));
+        TagInventory holder = new TagInventory(page, multiPage);
+        Inventory inventory = Bukkit.createInventory(holder, inventorySize, Component.text(TITLE));
         holder.setInventory(inventory);
 
         String selected = plugin.getSelectedTag(player);
@@ -58,12 +63,17 @@ public final class TagMenu implements Listener {
         disableItem.setItemMeta(disableMeta);
         inventory.setItem(0, disableItem);
 
-        int start = page * TAG_SLOTS;
-        int end = Math.min(start + TAG_SLOTS, tags.size());
+        int start = page * tagSlots;
+        int end = Math.min(start + tagSlots, tags.size());
 
         for (int i = start; i < end; i++) {
             String tag = tags.get(i);
             int slot = i - start;
+
+            // On a multi-page menu slot 0 is reserved for Disable Nametag.
+            if (multiPage && slot == 0) {
+                slot = 1;
+            }
 
             TagsPlugin.TagInfo info = plugin.getTagInfo(tag);
             ItemStack item = new ItemStack(Material.NAME_TAG);
@@ -94,30 +104,32 @@ public final class TagMenu implements Listener {
             meta.displayName(Component.text("No nametags available", TextColor.color(255, 85, 85)));
             meta.lore(List.of(Component.text("You don't own any nametags yet.", TextColor.color(170, 170, 170))));
             empty.setItemMeta(meta);
-            inventory.setItem(22, empty);
+            inventory.setItem(13, empty);
         }
 
-        if (page > 0) {
-            ItemStack previous = new ItemStack(Material.ARROW);
-            ItemMeta meta = previous.getItemMeta();
-            meta.displayName(Component.text("Previous Page", TextColor.color(255, 255, 255)));
-            previous.setItemMeta(meta);
-            inventory.setItem(PREVIOUS_SLOT, previous);
-        }
+        if (multiPage) {
+            if (page > 0) {
+                ItemStack previous = new ItemStack(Material.ARROW);
+                ItemMeta meta = previous.getItemMeta();
+                meta.displayName(Component.text("Previous Page", TextColor.color(255, 255, 255)));
+                previous.setItemMeta(meta);
+                inventory.setItem(PREVIOUS_SLOT, previous);
+            }
 
-        ItemStack pageItem = new ItemStack(Material.PAPER);
-        ItemMeta pageMeta = pageItem.getItemMeta();
-        pageMeta.displayName(Component.text("Page " + (page + 1) + " / " + totalPages, TextColor.color(255, 255, 255)));
-        pageMeta.lore(List.of(Component.text("Your nametags", TextColor.color(170, 170, 170))));
-        pageItem.setItemMeta(pageMeta);
-        inventory.setItem(PAGE_SLOT, pageItem);
+            ItemStack pageItem = new ItemStack(Material.PAPER);
+            ItemMeta pageMeta = pageItem.getItemMeta();
+            pageMeta.displayName(Component.text("Page " + (page + 1) + " / " + totalPages, TextColor.color(255, 255, 255)));
+            pageMeta.lore(List.of(Component.text("Your nametags", TextColor.color(170, 170, 170))));
+            pageItem.setItemMeta(pageMeta);
+            inventory.setItem(PAGE_SLOT, pageItem);
 
-        if (page < totalPages - 1) {
-            ItemStack next = new ItemStack(Material.ARROW);
-            ItemMeta meta = next.getItemMeta();
-            meta.displayName(Component.text("Next Page", TextColor.color(255, 255, 255)));
-            next.setItemMeta(meta);
-            inventory.setItem(NEXT_SLOT, next);
+            if (page < totalPages - 1) {
+                ItemStack next = new ItemStack(Material.ARROW);
+                ItemMeta meta = next.getItemMeta();
+                meta.displayName(Component.text("Next Page", TextColor.color(255, 255, 255)));
+                next.setItemMeta(meta);
+                inventory.setItem(NEXT_SLOT, next);
+            }
         }
 
         player.openInventory(inventory);
@@ -134,15 +146,16 @@ public final class TagMenu implements Listener {
 
         int slot = event.getRawSlot();
 
-        if (slot == PREVIOUS_SLOT && holder.page > 0) {
+        if (holder.multiPage && slot == PREVIOUS_SLOT && holder.page > 0) {
             open(player, holder.page - 1);
             return;
         }
 
         List<String> tags = plugin.getTags(player);
-        int totalPages = Math.max(1, (int) Math.ceil(tags.size() / (double) TAG_SLOTS));
+        int tagSlots = holder.multiPage ? MULTI_PAGE_TAG_SLOTS : SINGLE_PAGE_TAG_SLOTS;
+        int totalPages = Math.max(1, (int) Math.ceil(tags.size() / (double) tagSlots));
 
-        if (slot == NEXT_SLOT && holder.page < totalPages - 1) {
+        if (holder.multiPage && slot == NEXT_SLOT && holder.page < totalPages - 1) {
             open(player, holder.page + 1);
             return;
         }
@@ -154,9 +167,18 @@ public final class TagMenu implements Listener {
             return;
         }
 
-        if (slot < 0 || slot >= TAG_SLOTS) return;
+        if (holder.multiPage && slot == PAGE_SLOT) return;
+        if (!holder.multiPage && slot >= SINGLE_PAGE_SIZE) return;
 
-        int tagIndex = holder.page * TAG_SLOTS + slot;
+        int tagIndex;
+        if (holder.multiPage) {
+            if (slot < 1 || slot >= MULTI_PAGE_TAG_SLOTS) return;
+            tagIndex = holder.page * MULTI_PAGE_TAG_SLOTS + (slot - 1);
+        } else {
+            if (slot < 1 || slot >= SINGLE_PAGE_SIZE) return;
+            tagIndex = slot - 1;
+        }
+
         if (tagIndex < 0 || tagIndex >= tags.size()) return;
 
         String tag = tags.get(tagIndex);
@@ -174,10 +196,12 @@ public final class TagMenu implements Listener {
 
     private static final class TagInventory implements InventoryHolder {
         private final int page;
+        private final boolean multiPage;
         private Inventory inventory;
 
-        TagInventory(int page) {
+        TagInventory(int page, boolean multiPage) {
             this.page = page;
+            this.multiPage = multiPage;
         }
 
         void setInventory(Inventory inventory) {
