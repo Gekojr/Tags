@@ -3,27 +3,29 @@ package it.gekojr.tags;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
-import net.kyori.adventure.text.event.ClickEvent;
-import net.kyori.adventure.text.event.HoverEvent;
-import org.bukkit.ChatColor;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public final class TagsPlugin extends JavaPlugin implements Listener {
-    private final Map<UUID, String> playerTags = new HashMap<>();
+    private final Map<UUID, LinkedHashSet<String>> playerTags = new HashMap<>();
+    private final Map<UUID, String> selectedTags = new HashMap<>();
     private File dataFile;
     private YamlConfiguration data;
 
@@ -31,10 +33,27 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
     public void onEnable() {
         saveDefaultConfig();
         loadData();
+
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getPluginManager().registerEvents(new TagMenu(this), this);
+
         NametagCommand command = new NametagCommand(this);
         getCommand("nametag").setExecutor(command);
         getCommand("nametag").setTabCompleter(command);
+
+        getCommand("tag").setExecutor((sender, cmd, label, args) -> {
+            if (!(sender instanceof Player player)) {
+                sender.sendMessage("Only players can use /tag.");
+                return true;
+            }
+            if (args.length != 0) {
+                player.sendMessage("§cUse /tag to open your nametag menu.");
+                return true;
+            }
+            new TagMenu(this).open(player);
+            return true;
+        });
+
         getLogger().info("Tags enabled. Available tags: " + String.join(", ", getConfiguredTags()));
     }
 
@@ -47,17 +66,40 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
             getLogger().warning("Could not create plugin data folder.");
         }
+
         dataFile = new File(getDataFolder(), "data.yml");
         data = YamlConfiguration.loadConfiguration(dataFile);
-        ConfigurationSection section = data.getConfigurationSection("players");
-        if (section == null) return;
 
-        for (String key : section.getKeys(false)) {
+        ConfigurationSection players = data.getConfigurationSection("players");
+        if (players == null) return;
+
+        for (String key : players.getKeys(false)) {
             try {
                 UUID uuid = UUID.fromString(key);
-                String tag = section.getString(key);
-                if (tag != null && getTagConfig(tag) != null) {
-                    playerTags.put(uuid, tag.toLowerCase());
+
+                List<String> tags = players.getStringList(key + ".tags");
+                // Migrate data from the previous one-tag version.
+                if (tags.isEmpty()) {
+                    String oldTag = players.getString(key);
+                    if (oldTag != null && getTagConfig(oldTag) != null) {
+                        tags = List.of(oldTag);
+                    }
+                }
+
+                LinkedHashSet<String> owned = new LinkedHashSet<>();
+                for (String tag : tags) {
+                    if (getTagConfig(tag) != null) owned.add(tag.toLowerCase());
+                }
+
+                if (!owned.isEmpty()) {
+                    playerTags.put(uuid, owned);
+
+                    String selected = players.getString(key + ".selected");
+                    if (selected != null && owned.contains(selected.toLowerCase())) {
+                        selectedTags.put(uuid, selected.toLowerCase());
+                    } else {
+                        selectedTags.put(uuid, owned.iterator().next());
+                    }
                 }
             } catch (IllegalArgumentException ignored) {
                 getLogger().warning("Invalid UUID in data.yml: " + key);
@@ -67,10 +109,18 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
 
     public void saveData() {
         if (data == null) return;
+
         data.set("players", null);
-        for (Map.Entry<UUID, String> entry : playerTags.entrySet()) {
-            data.set("players." + entry.getKey(), entry.getValue());
+        for (Map.Entry<UUID, LinkedHashSet<String>> entry : playerTags.entrySet()) {
+            UUID uuid = entry.getKey();
+            data.set("players." + uuid + ".tags", new ArrayList<>(entry.getValue()));
+
+            String selected = selectedTags.get(uuid);
+            if (selected != null) {
+                data.set("players." + uuid + ".selected", selected);
+            }
         }
+
         try {
             data.save(dataFile);
         } catch (IOException e) {
@@ -78,25 +128,67 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         }
     }
 
-    public boolean setTag(OfflinePlayer player, String tag) {
+    public boolean addTag(OfflinePlayer player, String tag) {
         if (getTagConfig(tag) == null) return false;
-        playerTags.put(player.getUniqueId(), tag.toLowerCase());
+
+        String normalized = tag.toLowerCase();
+        LinkedHashSet<String> tags = playerTags.computeIfAbsent(
+                player.getUniqueId(), ignored -> new LinkedHashSet<>()
+        );
+
+        boolean added = tags.add(normalized);
+        selectedTags.putIfAbsent(player.getUniqueId(), normalized);
         saveData();
-        return true;
+        return added;
     }
 
-    public boolean removeTag(OfflinePlayer player) {
-        return playerTags.remove(player.getUniqueId()) != null;
+    public boolean removeTag(OfflinePlayer player, String tag) {
+        LinkedHashSet<String> tags = playerTags.get(player.getUniqueId());
+        if (tags == null) return false;
+
+        boolean removed = tags.remove(tag.toLowerCase());
+
+        if (tags.isEmpty()) {
+            playerTags.remove(player.getUniqueId());
+            selectedTags.remove(player.getUniqueId());
+        } else if (tag.equalsIgnoreCase(selectedTags.get(player.getUniqueId()))) {
+            selectedTags.put(player.getUniqueId(), tags.iterator().next());
+        }
+
+        saveData();
+        return removed;
     }
 
-    public String getTag(OfflinePlayer player) {
-        return playerTags.get(player.getUniqueId());
+    public void removeAllTags(OfflinePlayer player) {
+        playerTags.remove(player.getUniqueId());
+        selectedTags.remove(player.getUniqueId());
+        saveData();
+    }
+
+    public boolean hasTag(OfflinePlayer player, String tag) {
+        return playerTags.getOrDefault(player.getUniqueId(), new LinkedHashSet<>())
+                .contains(tag.toLowerCase());
+    }
+
+    public List<String> getTags(OfflinePlayer player) {
+        Set<String> tags = playerTags.get(player.getUniqueId());
+        if (tags == null) return Collections.emptyList();
+        return List.copyOf(tags);
+    }
+
+    public String getSelectedTag(OfflinePlayer player) {
+        return selectedTags.get(player.getUniqueId());
+    }
+
+    public void selectTag(Player player, String tag) {
+        if (!hasTag(player, tag)) return;
+        selectedTags.put(player.getUniqueId(), tag.toLowerCase());
+        saveData();
     }
 
     public ConfigurationSection getTagConfig(String tag) {
         if (tag == null) return null;
-        ConfigurationSection section = getConfig().getConfigurationSection("tags." + tag.toLowerCase());
-        return section;
+        return getConfig().getConfigurationSection("tags." + tag.toLowerCase());
     }
 
     public String[] getConfiguredTags() {
@@ -104,13 +196,25 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         return section == null ? new String[0] : section.getKeys(false).toArray(new String[0]);
     }
 
+    public TagInfo getTagInfo(String tag) {
+        ConfigurationSection section = getTagConfig(tag);
+        if (section == null) {
+            return new TagInfo(tag, TextColor.color(255, 255, 255));
+        }
+
+        String display = section.getString("display", tag.toUpperCase());
+        TextColor color = TextColor.fromHexString(section.getString("color", "#FFFFFF"));
+        if (color == null) color = TextColor.color(255, 255, 255);
+
+        return new TagInfo(display, color);
+    }
+
     public Component renderTag(String tag) {
         ConfigurationSection section = getTagConfig(tag);
         if (section == null) return Component.empty();
 
         String display = section.getString("display", tag.toUpperCase());
-        String colorString = section.getString("color", "#FFFFFF");
-        TextColor color = TextColor.fromHexString(colorString);
+        TextColor color = TextColor.fromHexString(section.getString("color", "#FFFFFF"));
         if (color == null) color = TextColor.color(255, 255, 255);
 
         boolean brackets = getConfig().getBoolean("chat.tag-brackets", true);
@@ -121,7 +225,8 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onChat(AsyncChatEvent event) {
         Player player = event.getPlayer();
-        String tag = getTag(player);
+        String tag = getSelectedTag(player);
+
         if (tag == null || getTagConfig(tag) == null) return;
 
         String separator = getConfig().getString("chat.separator", " » ");
@@ -130,12 +235,13 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
                 .append(Component.text(player.getName()))
                 .append(Component.text(separator));
 
-        event.renderer((source, sourceDisplayName, message, viewer) ->
-                prefix.append(message));
+        event.renderer((source, sourceDisplayName, message, viewer) -> prefix.append(message));
     }
 
     public void reloadPlugin() {
         reloadConfig();
+        playerTags.clear();
+        selectedTags.clear();
         loadData();
     }
 
@@ -143,4 +249,6 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         ConfigurationSection section = getTagConfig(tag);
         return section == null ? tag : section.getString("display", tag.toUpperCase());
     }
+
+    public record TagInfo(String display, TextColor color) {}
 }
