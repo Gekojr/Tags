@@ -29,6 +29,8 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
     private final Map<UUID, String> forcedTags = new HashMap<>();
     private final Map<UUID, Long> forcedTagExpiry = new HashMap<>();
     private final Map<UUID, String> forcedTagPrevious = new HashMap<>();
+    private final Map<UUID, Long> playtimeMillis = new HashMap<>();
+    private final Map<UUID, Long> sessionStartMillis = new HashMap<>();
     private File dataFile;
     private YamlConfiguration data;
 
@@ -58,6 +60,7 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         });
 
         getServer().getScheduler().runTaskTimer(this, this::expireForcedTags, 20L, 20L);
+        getServer().getScheduler().runTaskTimer(this, this::saveOnlinePlaytime, 20L * 60L, 20L * 60L);
 
         getLogger().info("Tags enabled. Available tags: " + String.join(", ", getConfiguredTags()));
     }
@@ -106,6 +109,9 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
                     }
                 }
 
+                long storedPlaytime = players.getLong(key + ".playtime", 0L);
+                if (storedPlaytime > 0L) playtimeMillis.put(uuid, storedPlaytime);
+
                 String forced = players.getString(key + ".forced");
                 long expiry = players.getLong(key + ".forced-expiry", 0L);
                 if (forced != null && getTagConfig(forced) != null && expiry > System.currentTimeMillis()) {
@@ -129,9 +135,11 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         if (data == null) return;
 
         data.set("players", null);
+        saveOnlinePlaytime();
         Set<UUID> uuids = new LinkedHashSet<>();
         uuids.addAll(playerTags.keySet());
         uuids.addAll(forcedTags.keySet());
+        uuids.addAll(playtimeMillis.keySet());
 
         for (UUID uuid : uuids) {
             data.set("players." + uuid + ".tags", new ArrayList<>(
@@ -140,6 +148,7 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
 
             String selected = selectedTags.get(uuid);
             data.set("players." + uuid + ".selected", selected != null ? selected : "none");
+            data.set("players." + uuid + ".playtime", getCurrentPlaytimeMillis(uuid));
 
             String forced = forcedTags.get(uuid);
             if (forced != null) {
@@ -217,7 +226,74 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
             expireForcedTag(uuid);
         }
 
+        String playtimeTag = getPlaytimeTag(player);
+        if (playtimeTag != null) return playtimeTag;
+
         return selectedTags.get(uuid);
+    }
+
+    public String getPlaytimeTag(OfflinePlayer player) {
+        if (!getConfig().getBoolean("playtime.enabled", false)) return null;
+        ConfigurationSection tiers = getConfig().getConfigurationSection("playtime.tiers");
+        if (tiers == null) return null;
+
+        double hours = getCurrentPlaytimeMillis(player.getUniqueId()) / 3_600_000.0;
+        String bestTag = null;
+        double bestHours = -1;
+        for (String key : tiers.getKeys(false)) {
+            double required = tiers.getDouble(key + ".hours", -1);
+            String tag = tiers.getString(key + ".tag");
+            if (tag != null && required >= 0 && required <= hours && required >= bestHours && getTagConfig(tag) != null) {
+                bestHours = required;
+                bestTag = tag.toLowerCase();
+            }
+        }
+        return bestTag;
+    }
+
+    private long getCurrentPlaytimeMillis(UUID uuid) {
+        long total = playtimeMillis.getOrDefault(uuid, 0L);
+        Long start = sessionStartMillis.get(uuid);
+        if (start != null) total += Math.max(0L, System.currentTimeMillis() - start);
+        return total;
+    }
+
+    private void saveOnlinePlaytime() {
+        long now = System.currentTimeMillis();
+        for (UUID uuid : new ArrayList<>(sessionStartMillis.keySet())) {
+            long start = sessionStartMillis.get(uuid);
+            playtimeMillis.merge(uuid, Math.max(0L, now - start), Long::sum);
+            sessionStartMillis.put(uuid, now);
+        }
+        if (data != null && !sessionStartMillis.isEmpty()) saveDataWithoutPlaytimeRecursion();
+    }
+
+    private void saveDataWithoutPlaytimeRecursion() {
+        for (UUID uuid : playtimeMillis.keySet()) {
+            data.set("players." + uuid + ".playtime", playtimeMillis.get(uuid));
+        }
+        try { data.save(dataFile); } catch (IOException e) { getLogger().severe("Could not save data.yml: " + e.getMessage()); }
+    }
+
+    private void startPlaytimeSession(Player player) {
+        sessionStartMillis.put(player.getUniqueId(), System.currentTimeMillis());
+    }
+
+    private void endPlaytimeSession(Player player) {
+        UUID uuid = player.getUniqueId();
+        Long start = sessionStartMillis.remove(uuid);
+        if (start != null) playtimeMillis.merge(uuid, Math.max(0L, System.currentTimeMillis() - start), Long::sum);
+        saveDataWithoutPlaytimeRecursion();
+    }
+
+    @EventHandler
+    public void onJoin(org.bukkit.event.player.PlayerJoinEvent event) {
+        startPlaytimeSession(event.getPlayer());
+    }
+
+    @EventHandler
+    public void onQuit(org.bukkit.event.player.PlayerQuitEvent event) {
+        endPlaytimeSession(event.getPlayer());
     }
 
     public void selectTag(Player player, String tag) {
@@ -389,7 +465,10 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         forcedTags.clear();
         forcedTagExpiry.clear();
         forcedTagPrevious.clear();
+        playtimeMillis.clear();
+        sessionStartMillis.clear();
         loadData();
+        for (Player player : getServer().getOnlinePlayers()) startPlaytimeSession(player);
     }
 
     public String displayName(String tag) {
