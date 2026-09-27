@@ -186,6 +186,11 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         saveData();
     }
 
+    public void disableTag(Player player) {
+        selectedTags.remove(player.getUniqueId());
+        saveData();
+    }
+
     public ConfigurationSection getTagConfig(String tag) {
         if (tag == null) return null;
         return getConfig().getConfigurationSection("tags." + tag.toLowerCase());
