@@ -14,6 +14,12 @@ tags:
   donator:
     display: "DONATOR"
     color: "#55FFFF"
+  chad:
+    display: "CHAD"
+    color: "#7A7A78"
+  schiavo:
+    display: "SCHIAVO"
+    color: "#5A3A24"
 
 chat:
   separator: " » "
