@@ -1,0 +1,20 @@
+# Tags plugin configuration
+# Colors use Minecraft hex colors.
+
+tags:
+  owner:
+    display: "OWNER"
+    color: "#AA0000"
+  co-owner:
+    display: "CO-OWNER"
+    color: "#FF5555"
+  admin:
+    display: "ADMIN"
+    color: "#FFAA00"
+  donator:
+    display: "DONATOR"
+    color: "#55FFFF"
+
+chat:
+  separator: " » "
+  tag-brackets: true
