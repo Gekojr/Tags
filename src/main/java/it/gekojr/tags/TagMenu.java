@@ -34,7 +34,6 @@ public final class TagMenu implements Listener {
         String selected = plugin.getSelectedTag(player);
         int slot = 0;
 
-        // Always available: option to disable the active nametag.
         ItemStack disableItem = new ItemStack(Material.BARRIER);
         ItemMeta disableMeta = disableItem.getItemMeta();
         boolean disabled = selected == null;
@@ -43,7 +42,7 @@ public final class TagMenu implements Listener {
                 Component.text(""),
                 disabled
                         ? Component.text("Currently selected", TextColor.color(85, 255, 85))
-                        : Component.text("Right-click to disable your nametag", TextColor.color(255, 255, 85))
+                        : Component.text("Left-click to disable your nametag", TextColor.color(255, 255, 85))
         ));
         disableItem.setItemMeta(disableMeta);
         inventory.setItem(slot++, disableItem);
@@ -68,7 +67,7 @@ public final class TagMenu implements Listener {
                     Component.text(""),
                     tag.equalsIgnoreCase(selected)
                             ? Component.text("Currently selected", TextColor.color(85, 255, 85))
-                            : Component.text("Right-click to select", TextColor.color(255, 255, 85))
+                            : Component.text("Left-click to select", TextColor.color(255, 255, 85))
             ));
             item.setItemMeta(meta);
             inventory.setItem(slot++, item);
@@ -93,7 +92,7 @@ public final class TagMenu implements Listener {
 
         if (!(event.getWhoClicked() instanceof Player player)) return;
         if (event.getClickedInventory() == null || event.getClickedInventory() != event.getView().getTopInventory()) return;
-        if (!event.getClick().isRightClick()) return;
+        if (!event.getClick().isLeftClick()) return;
 
         ItemStack clicked = event.getCurrentItem();
         if (clicked == null || !clicked.hasItemMeta()) return;
