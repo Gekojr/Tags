@@ -2,7 +2,6 @@ package it.gekojr.tags;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -19,6 +18,12 @@ import java.util.List;
 
 public final class TagMenu implements Listener {
     private static final String TITLE = "Your Nametags";
+    private static final int INVENTORY_SIZE = 54;
+    private static final int TAG_SLOTS = 45;
+    private static final int PREVIOUS_SLOT = 45;
+    private static final int PAGE_SLOT = 49;
+    private static final int NEXT_SLOT = 53;
+
     private final TagsPlugin plugin;
 
     public TagMenu(TagsPlugin plugin) {
@@ -26,13 +31,19 @@ public final class TagMenu implements Listener {
     }
 
     public void open(Player player) {
-        TagInventory holder = new TagInventory();
-        Inventory inventory = Bukkit.createInventory(holder, 27, Component.text(TITLE));
+        open(player, 0);
+    }
+
+    private void open(Player player, int requestedPage) {
+        List<String> tags = plugin.getTags(player);
+        int totalPages = Math.max(1, (int) Math.ceil(tags.size() / (double) TAG_SLOTS));
+        int page = Math.max(0, Math.min(requestedPage, totalPages - 1));
+
+        TagInventory holder = new TagInventory(page);
+        Inventory inventory = Bukkit.createInventory(holder, INVENTORY_SIZE, Component.text(TITLE));
         holder.setInventory(inventory);
 
-        List<String> tags = plugin.getTags(player);
         String selected = plugin.getSelectedTag(player);
-        int slot = 0;
 
         ItemStack disableItem = new ItemStack(Material.BARRIER);
         ItemMeta disableMeta = disableItem.getItemMeta();
@@ -45,10 +56,14 @@ public final class TagMenu implements Listener {
                         : Component.text("Left-click to disable your nametag", TextColor.color(255, 255, 85))
         ));
         disableItem.setItemMeta(disableMeta);
-        inventory.setItem(slot++, disableItem);
+        inventory.setItem(0, disableItem);
 
-        for (String tag : tags) {
-            if (slot >= 27) break;
+        int start = page * TAG_SLOTS;
+        int end = Math.min(start + TAG_SLOTS, tags.size());
+
+        for (int i = start; i < end; i++) {
+            String tag = tags.get(i);
+            int slot = i - start;
 
             TagsPlugin.TagInfo info = plugin.getTagInfo(tag);
             ItemStack item = new ItemStack(Material.NAME_TAG);
@@ -70,7 +85,7 @@ public final class TagMenu implements Listener {
                             : Component.text("Left-click to select", TextColor.color(255, 255, 85))
             ));
             item.setItemMeta(meta);
-            inventory.setItem(slot++, item);
+            inventory.setItem(slot, item);
         }
 
         if (tags.isEmpty()) {
@@ -79,7 +94,30 @@ public final class TagMenu implements Listener {
             meta.displayName(Component.text("No nametags available", TextColor.color(255, 85, 85)));
             meta.lore(List.of(Component.text("You don't own any nametags yet.", TextColor.color(170, 170, 170))));
             empty.setItemMeta(meta);
-            inventory.setItem(13, empty);
+            inventory.setItem(22, empty);
+        }
+
+        if (page > 0) {
+            ItemStack previous = new ItemStack(Material.ARROW);
+            ItemMeta meta = previous.getItemMeta();
+            meta.displayName(Component.text("Previous Page", TextColor.color(255, 255, 255)));
+            previous.setItemMeta(meta);
+            inventory.setItem(PREVIOUS_SLOT, previous);
+        }
+
+        ItemStack pageItem = new ItemStack(Material.PAPER);
+        ItemMeta pageMeta = pageItem.getItemMeta();
+        pageMeta.displayName(Component.text("Page " + (page + 1) + " / " + totalPages, TextColor.color(255, 255, 255)));
+        pageMeta.lore(List.of(Component.text("Your nametags", TextColor.color(170, 170, 170))));
+        pageItem.setItemMeta(pageMeta);
+        inventory.setItem(PAGE_SLOT, pageItem);
+
+        if (page < totalPages - 1) {
+            ItemStack next = new ItemStack(Material.ARROW);
+            ItemMeta meta = next.getItemMeta();
+            meta.displayName(Component.text("Next Page", TextColor.color(255, 255, 255)));
+            next.setItemMeta(meta);
+            inventory.setItem(NEXT_SLOT, next);
         }
 
         player.openInventory(inventory);
@@ -87,36 +125,44 @@ public final class TagMenu implements Listener {
 
     @EventHandler
     public void onClick(InventoryClickEvent event) {
-        if (!(event.getView().getTopInventory().getHolder(false) instanceof TagInventory)) return;
+        if (!(event.getView().getTopInventory().getHolder(false) instanceof TagInventory holder)) return;
         event.setCancelled(true);
 
         if (!(event.getWhoClicked() instanceof Player player)) return;
         if (event.getClickedInventory() == null || event.getClickedInventory() != event.getView().getTopInventory()) return;
         if (!event.getClick().isLeftClick()) return;
 
-        ItemStack clicked = event.getCurrentItem();
-        if (clicked == null || !clicked.hasItemMeta()) return;
+        int slot = event.getRawSlot();
 
-        if (clicked.getType() == Material.BARRIER) {
+        if (slot == PREVIOUS_SLOT && holder.page > 0) {
+            open(player, holder.page - 1);
+            return;
+        }
+
+        List<String> tags = plugin.getTags(player);
+        int totalPages = Math.max(1, (int) Math.ceil(tags.size() / (double) TAG_SLOTS));
+
+        if (slot == NEXT_SLOT && holder.page < totalPages - 1) {
+            open(player, holder.page + 1);
+            return;
+        }
+
+        if (slot == 0) {
             plugin.disableTag(player);
             player.closeInventory();
             player.sendMessage(Component.text("Nametag disabled.", TextColor.color(255, 255, 255)));
             return;
         }
 
-        if (clicked.getType() != Material.NAME_TAG) return;
+        if (slot < 0 || slot >= TAG_SLOTS) return;
 
-        String selectedDisplay = PlainTextComponentSerializer.plainText()
-                .serialize(clicked.getItemMeta().displayName());
+        int tagIndex = holder.page * TAG_SLOTS + slot;
+        if (tagIndex < 0 || tagIndex >= tags.size()) return;
 
-        for (String tag : plugin.getTags(player)) {
-            if (selectedDisplay.startsWith(plugin.displayName(tag))) {
-                plugin.selectTag(player, tag);
-                player.closeInventory();
-                player.sendMessage(Component.text("Nametag selected: " + plugin.displayName(tag), TextColor.color(255, 255, 255)));
-                return;
-            }
-        }
+        String tag = tags.get(tagIndex);
+        plugin.selectTag(player, tag);
+        player.closeInventory();
+        player.sendMessage(Component.text("Nametag selected: " + plugin.displayName(tag), TextColor.color(255, 255, 255)));
     }
 
     @EventHandler
@@ -127,7 +173,12 @@ public final class TagMenu implements Listener {
     }
 
     private static final class TagInventory implements InventoryHolder {
+        private final int page;
         private Inventory inventory;
+
+        TagInventory(int page) {
+            this.page = page;
+        }
 
         void setInventory(Inventory inventory) {
             this.inventory = inventory;
