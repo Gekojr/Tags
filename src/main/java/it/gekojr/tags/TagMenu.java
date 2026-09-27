@@ -91,8 +91,7 @@ public final class TagMenu implements Listener {
             if (selectedDisplay.startsWith(plugin.displayName(tag))) {
                 plugin.selectTag(player, tag);
                 player.closeInventory();
-                player.sendMessage(Component.text("Nametag selected: ", TextColor.color(85, 255, 85))
-                        .append(plugin.renderTag(tag)));
+                player.sendMessage(Component.text("Nametag selected: " + plugin.displayName(tag), TextColor.color(255, 255, 255)));
                 return;
             }
         }
