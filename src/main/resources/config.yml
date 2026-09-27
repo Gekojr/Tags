@@ -27,6 +27,23 @@ tags:
     display: "SLAVE"
     color: "#5A3A24"
 
+# Automatic nametags based on total playtime.
+# The highest reached tier is used automatically in chat.
+# time is expressed in hours.
+playtime:
+  enabled: true
+  tiers:
+    - hours: 0
+      tag: "new"
+    - hours: 10
+      tag: "member"
+    - hours: 25
+      tag: "veteran"
+    - hours: 50
+      tag: "elite"
+    - hours: 100
+      tag: "legend"
+
 chat:
   separator: " » "
   tag-brackets: true
