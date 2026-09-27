@@ -26,6 +26,21 @@ tags:
   schiavo:
     display: "SLAVE"
     color: "#5A3A24"
+  new:
+    display: "NEW"
+    color: "#AAAAAA"
+  member:
+    display: "MEMBER"
+    color: "#55FF55"
+  veteran:
+    display: "VETERAN"
+    color: "#55FFFF"
+  elite:
+    display: "ELITE"
+    color: "#AA00AA"
+  legend:
+    display: "LEGEND"
+    color: "#FFAA00"
 
 # Automatic nametags based on total playtime.
 # The highest reached tier is used automatically in chat.
