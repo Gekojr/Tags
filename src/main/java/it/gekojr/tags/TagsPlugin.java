@@ -78,7 +78,6 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
                 UUID uuid = UUID.fromString(key);
 
                 List<String> tags = players.getStringList(key + ".tags");
-                // Migrate data from the previous one-tag version.
                 if (tags.isEmpty()) {
                     String oldTag = players.getString(key);
                     if (oldTag != null && getTagConfig(oldTag) != null) {
@@ -118,6 +117,8 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
             String selected = selectedTags.get(uuid);
             if (selected != null) {
                 data.set("players." + uuid + ".selected", selected);
+            } else {
+                data.set("players." + uuid + ".selected", "none");
             }
         }
 
@@ -219,12 +220,35 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         if (section == null) return Component.empty();
 
         String display = section.getString("display", tag.toUpperCase());
-        TextColor color = TextColor.fromHexString(section.getString("color", "#FFFFFF"));
-        if (color == null) color = TextColor.color(255, 255, 255);
-
         boolean brackets = getConfig().getBoolean("chat.tag-brackets", true);
-        String text = brackets ? "[" + display + "]" : display;
-        return Component.text(text, color);
+
+        Component result;
+
+        if (tag.equalsIgnoreCase("schiavo")) {
+            TextColor white = TextColor.color(255, 255, 255);
+            TextColor black = TextColor.color(0, 0, 0);
+
+            Component letters = Component.empty();
+            for (int i = 0; i < display.length(); i++) {
+                TextColor color = (i % 2 == 0) ? white : black;
+                letters = letters.append(Component.text(String.valueOf(display.charAt(i)), color));
+            }
+
+            result = letters;
+            if (brackets) {
+                result = Component.text("[", white)
+                        .append(result)
+                        .append(Component.text("]", white));
+            }
+        } else {
+            TextColor color = TextColor.fromHexString(section.getString("color", "#FFFFFF"));
+            if (color == null) color = TextColor.color(255, 255, 255);
+
+            String text = brackets ? "[" + display + "]" : display;
+            result = Component.text(text, color);
+        }
+
+        return result;
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
