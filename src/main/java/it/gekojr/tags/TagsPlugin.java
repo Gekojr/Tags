@@ -26,6 +26,9 @@ import java.util.UUID;
 public final class TagsPlugin extends JavaPlugin implements Listener {
     private final Map<UUID, LinkedHashSet<String>> playerTags = new HashMap<>();
     private final Map<UUID, String> selectedTags = new HashMap<>();
+    private final Map<UUID, String> forcedTags = new HashMap<>();
+    private final Map<UUID, Long> forcedTagExpiry = new HashMap<>();
+    private final Map<UUID, String> forcedTagPrevious = new HashMap<>();
     private File dataFile;
     private YamlConfiguration data;
 
@@ -53,6 +56,8 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
             new TagMenu(this).open(player);
             return true;
         });
+
+        getServer().getScheduler().runTaskTimer(this, this::expireForcedTags, 20L, 20L);
 
         getLogger().info("Tags enabled. Available tags: " + String.join(", ", getConfiguredTags()));
     }
@@ -94,31 +99,54 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
                     playerTags.put(uuid, owned);
 
                     String selected = players.getString(key + ".selected");
-                    if (selected != null && owned.contains(selected.toLowerCase())) {
+                    if (selected != null && !"none".equalsIgnoreCase(selected) && owned.contains(selected.toLowerCase())) {
                         selectedTags.put(uuid, selected.toLowerCase());
-                    } else {
+                    } else if (selected == null) {
                         selectedTags.put(uuid, owned.iterator().next());
+                    }
+                }
+
+                String forced = players.getString(key + ".forced");
+                long expiry = players.getLong(key + ".forced-expiry", 0L);
+                if (forced != null && getTagConfig(forced) != null && expiry > System.currentTimeMillis()) {
+                    forcedTags.put(uuid, forced.toLowerCase());
+                    forcedTagExpiry.put(uuid, expiry);
+
+                    String previous = players.getString(key + ".forced-previous");
+                    if (previous != null && !"none".equalsIgnoreCase(previous)) {
+                        forcedTagPrevious.put(uuid, previous.toLowerCase());
                     }
                 }
             } catch (IllegalArgumentException ignored) {
                 getLogger().warning("Invalid UUID in data.yml: " + key);
             }
         }
+
+        expireForcedTags();
     }
 
     public void saveData() {
         if (data == null) return;
 
         data.set("players", null);
-        for (Map.Entry<UUID, LinkedHashSet<String>> entry : playerTags.entrySet()) {
-            UUID uuid = entry.getKey();
-            data.set("players." + uuid + ".tags", new ArrayList<>(entry.getValue()));
+        Set<UUID> uuids = new LinkedHashSet<>();
+        uuids.addAll(playerTags.keySet());
+        uuids.addAll(forcedTags.keySet());
+
+        for (UUID uuid : uuids) {
+            data.set("players." + uuid + ".tags", new ArrayList<>(
+                    playerTags.getOrDefault(uuid, new LinkedHashSet<>())
+            ));
 
             String selected = selectedTags.get(uuid);
-            if (selected != null) {
-                data.set("players." + uuid + ".selected", selected);
-            } else {
-                data.set("players." + uuid + ".selected", "none");
+            data.set("players." + uuid + ".selected", selected != null ? selected : "none");
+
+            String forced = forcedTags.get(uuid);
+            if (forced != null) {
+                data.set("players." + uuid + ".forced", forced);
+                data.set("players." + uuid + ".forced-expiry", forcedTagExpiry.getOrDefault(uuid, 0L));
+                data.set("players." + uuid + ".forced-previous",
+                        forcedTagPrevious.getOrDefault(uuid, "none"));
             }
         }
 
@@ -178,18 +206,100 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
     }
 
     public String getSelectedTag(OfflinePlayer player) {
-        return selectedTags.get(player.getUniqueId());
+        UUID uuid = player.getUniqueId();
+        String forced = forcedTags.get(uuid);
+
+        if (forced != null) {
+            long expiry = forcedTagExpiry.getOrDefault(uuid, 0L);
+            if (expiry > System.currentTimeMillis()) {
+                return forced;
+            }
+            expireForcedTag(uuid);
+        }
+
+        return selectedTags.get(uuid);
     }
 
     public void selectTag(Player player, String tag) {
+        if (isTagForced(player)) return;
         if (!hasTag(player, tag)) return;
         selectedTags.put(player.getUniqueId(), tag.toLowerCase());
         saveData();
     }
 
     public void disableTag(Player player) {
+        if (isTagForced(player)) return;
         selectedTags.remove(player.getUniqueId());
         saveData();
+    }
+
+    public boolean isTagForced(OfflinePlayer player) {
+        UUID uuid = player.getUniqueId();
+        Long expiry = forcedTagExpiry.get(uuid);
+        if (!forcedTags.containsKey(uuid)) return false;
+        if (expiry != null && expiry > System.currentTimeMillis()) return true;
+
+        expireForcedTag(uuid);
+        return false;
+    }
+
+    public boolean forceTag(OfflinePlayer player, String tag, long durationMillis) {
+        if (getTagConfig(tag) == null || durationMillis <= 0) return false;
+
+        UUID uuid = player.getUniqueId();
+        String previous = getSelectedTag(player);
+        if (forcedTags.containsKey(uuid)) {
+            previous = forcedTagPrevious.get(uuid);
+        }
+
+        if (previous != null && getTagConfig(previous) != null) {
+            forcedTagPrevious.put(uuid, previous.toLowerCase());
+        } else {
+            forcedTagPrevious.remove(uuid);
+        }
+
+        forcedTags.put(uuid, tag.toLowerCase());
+        forcedTagExpiry.put(uuid, System.currentTimeMillis() + durationMillis);
+        saveData();
+        return true;
+    }
+
+    public boolean unforceTag(OfflinePlayer player) {
+        if (!forcedTags.containsKey(player.getUniqueId())) return false;
+        expireForcedTag(player.getUniqueId());
+        return true;
+    }
+
+    private void expireForcedTags() {
+        List<UUID> expired = new ArrayList<>();
+        long now = System.currentTimeMillis();
+
+        for (Map.Entry<UUID, Long> entry : forcedTagExpiry.entrySet()) {
+            if (entry.getValue() <= now) expired.add(entry.getKey());
+        }
+
+        if (!expired.isEmpty()) {
+            for (UUID uuid : expired) expireForcedTag(uuid);
+            saveData();
+        }
+    }
+
+    private void expireForcedTag(UUID uuid) {
+        String previous = forcedTagPrevious.remove(uuid);
+        forcedTags.remove(uuid);
+        forcedTagExpiry.remove(uuid);
+
+        if (previous != null && getTagConfig(previous) != null
+                && playerTags.getOrDefault(uuid, new LinkedHashSet<>()).contains(previous)) {
+            selectedTags.put(uuid, previous);
+        } else {
+            selectedTags.remove(uuid);
+        }
+    }
+
+    public long getForcedTagRemainingMillis(OfflinePlayer player) {
+        if (!isTagForced(player)) return 0L;
+        return Math.max(0L, forcedTagExpiry.get(player.getUniqueId()) - System.currentTimeMillis());
     }
 
     public ConfigurationSection getTagConfig(String tag) {
@@ -276,6 +386,9 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         reloadConfig();
         playerTags.clear();
         selectedTags.clear();
+        forcedTags.clear();
+        forcedTagExpiry.clear();
+        forcedTagPrevious.clear();
         loadData();
     }
 
