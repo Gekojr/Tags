@@ -34,6 +34,20 @@ public final class TagMenu implements Listener {
         String selected = plugin.getSelectedTag(player);
         int slot = 0;
 
+        // Always available: option to disable the active nametag.
+        ItemStack disableItem = new ItemStack(Material.BARRIER);
+        ItemMeta disableMeta = disableItem.getItemMeta();
+        boolean disabled = selected == null;
+        disableMeta.displayName(Component.text("Disable Nametag", TextColor.color(255, 255, 255)));
+        disableMeta.lore(List.of(
+                Component.text(""),
+                disabled
+                        ? Component.text("Currently selected", TextColor.color(85, 255, 85))
+                        : Component.text("Right-click to disable your nametag", TextColor.color(255, 255, 85))
+        ));
+        disableItem.setItemMeta(disableMeta);
+        inventory.setItem(slot++, disableItem);
+
         for (String tag : tags) {
             if (slot >= 27) break;
 
@@ -82,7 +96,16 @@ public final class TagMenu implements Listener {
         if (!event.getClick().isRightClick()) return;
 
         ItemStack clicked = event.getCurrentItem();
-        if (clicked == null || clicked.getType() != Material.NAME_TAG || !clicked.hasItemMeta()) return;
+        if (clicked == null || !clicked.hasItemMeta()) return;
+
+        if (clicked.getType() == Material.BARRIER) {
+            plugin.disableTag(player);
+            player.closeInventory();
+            player.sendMessage(Component.text("Nametag disabled.", TextColor.color(255, 255, 255)));
+            return;
+        }
+
+        if (clicked.getType() != Material.NAME_TAG) return;
 
         String selectedDisplay = PlainTextComponentSerializer.plainText()
                 .serialize(clicked.getItemMeta().displayName());
