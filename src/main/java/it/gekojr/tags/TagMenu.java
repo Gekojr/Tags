@@ -68,7 +68,7 @@ public final class TagMenu implements Listener {
 
         for (int i = start; i < end; i++) {
             String tag = tags.get(i);
-            int slot = multiPage ? (i - start + 1) : (i - start);
+            int slot = i - start + 1;
 
             TagsPlugin.TagInfo info = plugin.getTagInfo(tag);
             ItemStack item = new ItemStack(Material.NAME_TAG);
