@@ -68,12 +68,7 @@ public final class TagMenu implements Listener {
 
         for (int i = start; i < end; i++) {
             String tag = tags.get(i);
-            int slot = i - start;
-
-            // On a multi-page menu slot 0 is reserved for Disable Nametag.
-            if (multiPage && slot == 0) {
-                slot = 1;
-            }
+            int slot = multiPage ? (i - start + 1) : (i - start);
 
             TagsPlugin.TagInfo info = plugin.getTagInfo(tag);
             ItemStack item = new ItemStack(Material.NAME_TAG);
@@ -172,7 +167,7 @@ public final class TagMenu implements Listener {
 
         int tagIndex;
         if (holder.multiPage) {
-            if (slot < 1 || slot >= MULTI_PAGE_TAG_SLOTS) return;
+            if (slot < 1 || slot > MULTI_PAGE_TAG_SLOTS) return;
             tagIndex = holder.page * MULTI_PAGE_TAG_SLOTS + (slot - 1);
         } else {
             if (slot < 1 || slot >= SINGLE_PAGE_SIZE) return;
