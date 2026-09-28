@@ -250,6 +250,48 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         return selectedTags.get(uuid);
     }
 
+    public void resetPlaytime(OfflinePlayer player) {
+        UUID uuid = player.getUniqueId();
+        playtimeMillis.remove(uuid);
+        sessionStartMillis.remove(uuid);
+        removePlaytimeTags(uuid);
+        saveData();
+    }
+
+    public void resetAllPlaytime() {
+        Set<UUID> uuids = new LinkedHashSet<>();
+        uuids.addAll(playtimeMillis.keySet());
+        uuids.addAll(sessionStartMillis.keySet());
+        uuids.addAll(playerTags.keySet());
+
+        for (UUID uuid : uuids) {
+            playtimeMillis.remove(uuid);
+            sessionStartMillis.remove(uuid);
+            removePlaytimeTags(uuid);
+        }
+        saveData();
+    }
+
+    private void removePlaytimeTags(UUID uuid) {
+        LinkedHashSet<String> tags = playerTags.get(uuid);
+        if (tags == null) return;
+
+        ConfigurationSection tiers = getConfig().getConfigurationSection("playtime.tiers");
+        if (tiers != null) {
+            for (String key : tiers.getKeys(false)) {
+                String tag = tiers.getString(key + ".tag");
+                if (tag != null) tags.remove(tag.toLowerCase());
+            }
+        }
+
+        if (tags.isEmpty()) {
+            playerTags.remove(uuid);
+            selectedTags.remove(uuid);
+        } else if (selectedTags.get(uuid) != null && !tags.contains(selectedTags.get(uuid))) {
+            selectedTags.put(uuid, tags.iterator().next());
+        }
+    }
+
     public String getPlaytimeTag(OfflinePlayer player) {
         if (!getConfig().getBoolean("playtime.enabled", false)) return null;
         ConfigurationSection tiers = getConfig().getConfigurationSection("playtime.tiers");
