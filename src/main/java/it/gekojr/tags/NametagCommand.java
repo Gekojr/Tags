@@ -142,6 +142,23 @@ public final class NametagCommand implements CommandExecutor, TabCompleter {
                 return true;
             }
 
+            case "resetplaytime" -> {
+                if (args.length < 2) {
+                    sender.sendMessage("§cUsage: /nametag resetplaytime <player|all>");
+                    return true;
+                }
+
+                if (args[1].equalsIgnoreCase("all")) {
+                    plugin.resetAllPlaytime();
+                    sender.sendMessage("§aPlaytime reset for all players.");
+                } else {
+                    OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
+                    plugin.resetPlaytime(target);
+                    sender.sendMessage("§aPlaytime reset for §f" + args[1] + "§a.");
+                }
+                return true;
+            }
+
             case "reload" -> {
                 plugin.reloadPlugin();
                 sender.sendMessage("§aTags configuration reloaded.");
@@ -193,13 +210,14 @@ public final class NametagCommand implements CommandExecutor, TabCompleter {
         sender.sendMessage("§e/nametag remove <player> [tag] §7- Remove one or all nametags");
         sender.sendMessage("§e/nametag get <player> §7- Show owned nametags");
         sender.sendMessage("§e/nametag list §7- List available nametags");
+        sender.sendMessage("§e/nametag resetplaytime <player|all> §7- Reset playtime");
         sender.sendMessage("§e/nametag reload §7- Reload configuration");
     }
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return partial(Arrays.asList("add", "set", "force", "unforce", "remove", "get", "list", "reload"), args[0]);
+            return partial(Arrays.asList("add", "set", "force", "unforce", "remove", "get", "list", "resetplaytime", "reload"), args[0]);
         }
 
         if (args.length == 2 && (args[0].equalsIgnoreCase("set")
@@ -207,7 +225,7 @@ public final class NametagCommand implements CommandExecutor, TabCompleter {
                 || args[0].equalsIgnoreCase("force")
                 || args[0].equalsIgnoreCase("unforce")
                 || args[0].equalsIgnoreCase("remove")
-                || args[0].equalsIgnoreCase("get"))) {
+                || args[0].equalsIgnoreCase("get") || args[0].equalsIgnoreCase("resetplaytime"))) {
             List<String> names = new ArrayList<>();
             Bukkit.getOnlinePlayers().forEach(p -> names.add(p.getName()));
             return partial(names, args[1]);
