@@ -427,8 +427,15 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
                         .append(Component.text("]", white));
             }
         } else {
-            TextColor color = TextColor.fromHexString(section.getString("color", "#FFFFFF"));
-            if (color == null) color = TextColor.color(255, 255, 255);
+            TextColor color;
+
+            // CHAD must always use dark gray in chat, regardless of an old config value.
+            if (tag.equalsIgnoreCase("chad")) {
+                color = TextColor.color(85, 85, 85);
+            } else {
+                color = TextColor.fromHexString(section.getString("color", "#FFFFFF"));
+                if (color == null) color = TextColor.color(255, 255, 255);
+            }
 
             String text = brackets ? "[" + display + "]" : display;
             result = Component.text(text, color);
@@ -446,7 +453,9 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
 
         String separator = getConfig().getString("chat.separator", " » ");
         TextColor white = TextColor.color(255, 255, 255);
-        TextColor nameColor = getTagInfo(tag).color();
+        TextColor nameColor = tag.equalsIgnoreCase("chad")
+                ? TextColor.color(85, 85, 85)
+                : getTagInfo(tag).color();
 
         Component prefix = renderTag(tag)
                 .append(Component.space())
