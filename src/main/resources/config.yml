@@ -22,7 +22,7 @@ tags:
     priority: 50\n    color: "#55FFFF"
   chad:
     display: "CHAD"
-    priority: 40\n    color: "#555555"
+    priority: 55\n    color: "#555555"
   schiavo:
     display: "SLAVE"
     priority: 30\n    color: "#AA00AA"
