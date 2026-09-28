@@ -4,43 +4,43 @@
 tags:
   owner:
     display: "OWNER"
-    color: "#AA0000"
+    priority: 100\n    color: "#AA0000"
   co-owner:
     display: "CO-OWNER"
-    color: "#FF5555"
+    priority: 90\n    color: "#FF5555"
   admin:
     display: "ADMIN"
-    color: "#FFAA00"
+    priority: 80\n    color: "#FFAA00"
   helper:
     display: "HELPER"
-    color: "#32CD32"
+    priority: 70\n    color: "#32CD32"
   discord-mod:
     display: "DISCORD MOD"
-    color: "#00008B"
+    priority: 60\n    color: "#00008B"
   donator:
     display: "DONATOR"
-    color: "#55FFFF"
+    priority: 50\n    color: "#55FFFF"
   chad:
     display: "CHAD"
-    color: "#555555"
+    priority: 40\n    color: "#555555"
   schiavo:
     display: "SLAVE"
-    color: "#AA00AA"
+    priority: 30\n    color: "#AA00AA"
   new:
     display: "NEW"
-    color: "#AAAAAA"
+    priority: 16\n    color: "#AAAAAA"
   member:
     display: "MEMBER"
-    color: "#55FF55"
+    priority: 17\n    color: "#55FF55"
   veteran:
     display: "VETERAN"
-    color: "#55FFFF"
+    priority: 18\n    color: "#55FFFF"
   elite:
     display: "ELITE"
-    color: "#AA00AA"
+    priority: 19\n    color: "#AA00AA"
   legend:
     display: "LEGEND"
-    color: "#FFAA00"
+    priority: 20\n    color: "#FFAA00"
 
 # Automatic nametags based on total playtime.
 # The highest reached tier is used automatically in chat.
