@@ -211,7 +211,24 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
     public List<String> getTags(OfflinePlayer player) {
         Set<String> tags = playerTags.get(player.getUniqueId());
         if (tags == null) return Collections.emptyList();
-        return List.copyOf(tags);
+
+        List<String> sorted = new ArrayList<>(tags);
+        sorted.sort((a, b) -> {
+            int priorityA = getTagPriority(a);
+            int priorityB = getTagPriority(b);
+
+            int priorityCompare = Integer.compare(priorityB, priorityA);
+            if (priorityCompare != 0) return priorityCompare;
+
+            return displayName(a).compareToIgnoreCase(displayName(b));
+        });
+
+        return sorted;
+    }
+
+    private int getTagPriority(String tag) {
+        ConfigurationSection section = getTagConfig(tag);
+        return section == null ? 0 : section.getInt("priority", 0);
     }
 
     public String getSelectedTag(OfflinePlayer player) {
