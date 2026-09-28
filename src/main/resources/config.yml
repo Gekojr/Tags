@@ -22,10 +22,10 @@ tags:
     color: "#55FFFF"
   chad:
     display: "CHAD"
-    color: "#808080"
+    color: "#555555"
   schiavo:
     display: "SLAVE"
-    color: "#5A3A24"
+    color: "#AA00AA"
   new:
     display: "NEW"
     color: "#AAAAAA"
