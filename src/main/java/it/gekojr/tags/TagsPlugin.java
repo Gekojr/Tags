@@ -60,6 +60,7 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         });
 
         getServer().getScheduler().runTaskTimer(this, this::expireForcedTags, 20L, 20L);
+        getServer().getScheduler().runTaskTimer(this, this::updatePlaytimeTags, 20L * 60L, 20L * 60L);
         getServer().getScheduler().runTaskTimer(this, this::saveOnlinePlaytime, 20L * 60L, 20L * 60L);
 
         getLogger().info("Tags enabled. Available tags: " + String.join(", ", getConfiguredTags()));
@@ -293,7 +294,30 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
     }
 
     private void startPlaytimeSession(Player player) {
-        sessionStartMillis.put(player.getUniqueId(), System.currentTimeMillis());
+        UUID uuid = player.getUniqueId();
+        // Playtime is tracked for the whole server, regardless of world.
+        // Existing time is loaded from data.yml and is never reset on world changes.
+        sessionStartMillis.put(uuid, System.currentTimeMillis());
+        ensurePlaytimeTag(player);
+    }
+
+    private void ensurePlaytimeTag(Player player) {
+        String playtimeTag = getPlaytimeTag(player);
+        if (playtimeTag == null) return;
+
+        LinkedHashSet<String> tags = playerTags.computeIfAbsent(
+                player.getUniqueId(), ignored -> new LinkedHashSet<>()
+        );
+
+        if (tags.add(playtimeTag)) {
+            saveData();
+        }
+    }
+
+    private void updatePlaytimeTags() {
+        for (Player player : getServer().getOnlinePlayers()) {
+            ensurePlaytimeTag(player);
+        }
     }
 
     private void endPlaytimeSession(Player player) {
