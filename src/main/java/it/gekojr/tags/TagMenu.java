@@ -21,7 +21,7 @@ public final class TagMenu implements Listener {
     private static final int SINGLE_PAGE_SIZE = 27;
     private static final int SINGLE_PAGE_TAG_SLOTS = 26;
     private static final int MULTI_PAGE_SIZE = 54;
-    private static final int MULTI_PAGE_TAG_SLOTS = 45;
+    private static final int MULTI_PAGE_TAG_SLOTS = 44;
     private static final int PREVIOUS_SLOT = 45;
     private static final int PAGE_SLOT = 49;
     private static final int NEXT_SLOT = 53;
