@@ -74,7 +74,8 @@ public final class TagMenu implements Listener {
             ItemStack item = new ItemStack(Material.NAME_TAG);
             ItemMeta meta = item.getItemMeta();
 
-            Component display = Component.text(info.display(), info.color());
+            TextColor menuColor = tag.equalsIgnoreCase("chad") ? TextColor.color(85, 85, 85) : info.color();
+            Component display = Component.text(info.display(), menuColor);
             if (tag.equalsIgnoreCase(selected)) {
                 display = display.append(Component.text("  ✓", TextColor.color(85, 255, 85)));
             }
@@ -83,7 +84,7 @@ public final class TagMenu implements Listener {
             meta.lore(List.of(
                     Component.text(""),
                     Component.text("Title: ", TextColor.color(170, 170, 170))
-                            .append(Component.text(info.display(), info.color())),
+                            .append(Component.text(info.display(), menuColor)),
                     Component.text(""),
                     tag.equalsIgnoreCase(selected)
                             ? Component.text("Currently selected", TextColor.color(85, 255, 85))
