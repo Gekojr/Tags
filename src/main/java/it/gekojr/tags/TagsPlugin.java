@@ -252,44 +252,35 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
 
     public void resetPlaytime(OfflinePlayer player) {
         UUID uuid = player.getUniqueId();
-        playtimeMillis.remove(uuid);
-        sessionStartMillis.remove(uuid);
-        removePlaytimeTags(uuid);
+
+        // Reset only playtime. Never remove or modify owned/selected nametags.
+        if (player.isOnline()) {
+            playtimeMillis.put(uuid, 0L);
+            sessionStartMillis.put(uuid, System.currentTimeMillis());
+        } else {
+            playtimeMillis.remove(uuid);
+            sessionStartMillis.remove(uuid);
+        }
+
         saveData();
     }
 
     public void resetAllPlaytime() {
-        Set<UUID> uuids = new LinkedHashSet<>();
-        uuids.addAll(playtimeMillis.keySet());
-        uuids.addAll(sessionStartMillis.keySet());
-        uuids.addAll(playerTags.keySet());
-
-        for (UUID uuid : uuids) {
-            playtimeMillis.remove(uuid);
-            sessionStartMillis.remove(uuid);
-            removePlaytimeTags(uuid);
+        // Reset only playtime. Never remove or modify owned/selected nametags.
+        for (Player player : getServer().getOnlinePlayers()) {
+            UUID uuid = player.getUniqueId();
+            playtimeMillis.put(uuid, 0L);
+            sessionStartMillis.put(uuid, System.currentTimeMillis());
         }
-        saveData();
-    }
 
-    private void removePlaytimeTags(UUID uuid) {
-        LinkedHashSet<String> tags = playerTags.get(uuid);
-        if (tags == null) return;
-
-        ConfigurationSection tiers = getConfig().getConfigurationSection("playtime.tiers");
-        if (tiers != null) {
-            for (String key : tiers.getKeys(false)) {
-                String tag = tiers.getString(key + ".tag");
-                if (tag != null) tags.remove(tag.toLowerCase());
+        for (UUID uuid : new LinkedHashSet<>(playtimeMillis.keySet())) {
+            if (getServer().getPlayer(uuid) == null) {
+                playtimeMillis.remove(uuid);
+                sessionStartMillis.remove(uuid);
             }
         }
 
-        if (tags.isEmpty()) {
-            playerTags.remove(uuid);
-            selectedTags.remove(uuid);
-        } else if (selectedTags.get(uuid) != null && !tags.contains(selectedTags.get(uuid))) {
-            selectedTags.put(uuid, tags.iterator().next());
-        }
+        saveData();
     }
 
     public String getPlaytimeTag(OfflinePlayer player) {
