@@ -20,6 +20,9 @@ tags:
   donator:
     display: "DONATOR"
     priority: 50\n    color: "#55FFFF"
+  social-media-manager:
+    display: "SOCIAL MEDIA MANAGER"
+    priority: 65\n    color: "#00008B"
   chad:
     display: "CHAD"
     priority: 55\n    color: "#555555"
