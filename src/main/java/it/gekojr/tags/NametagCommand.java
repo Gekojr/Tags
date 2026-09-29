@@ -33,6 +33,22 @@ public final class NametagCommand implements CommandExecutor, TabCompleter {
         }
 
         switch (args[0].toLowerCase()) {
+            case "all", "giveall" -> {
+                if (args.length < 2) {
+                    sender.sendMessage("§cUsage: /nametag all <player>");
+                    return true;
+                }
+
+                OfflinePlayer target = Bukkit.getOfflinePlayer(args[1]);
+                int added = 0;
+                for (String tag : plugin.getConfiguredTags()) {
+                    if (plugin.addTag(target, tag)) added++;
+                }
+
+                sender.sendMessage("§aAdded all nametags to §f" + args[1] + "§a (§f" + added + "§a new).");
+                return true;
+            }
+
             case "add", "set" -> {
                 if (args.length < 3) {
                     sender.sendMessage("§cUsage: /nametag add <player> <tag>");
@@ -204,6 +220,7 @@ public final class NametagCommand implements CommandExecutor, TabCompleter {
 
     private void help(CommandSender sender) {
         sender.sendMessage("§6§lTags");
+        sender.sendMessage("§e/nametag all <player> §7- Give all nametags");
         sender.sendMessage("§e/nametag add <player> <tag> §7- Give a player a nametag");
         sender.sendMessage("§e/nametag force <player> <tag> <duration> §7- Force a nametag temporarily");
         sender.sendMessage("§e/nametag unforce <player> §7- Remove a forced nametag");
@@ -217,7 +234,7 @@ public final class NametagCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return partial(Arrays.asList("add", "set", "force", "unforce", "remove", "get", "list", "resetplaytime", "reload"), args[0]);
+            return partial(Arrays.asList("add", "set", "all", "giveall", "force", "unforce", "remove", "get", "list", "resetplaytime", "reload"), args[0]);
         }
 
         if (args.length == 2 && (args[0].equalsIgnoreCase("set")
