@@ -37,6 +37,7 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         saveDefaultConfig();
+        ensureConfiguredTags();
         loadData();
 
         getServer().getPluginManager().registerEvents(this, this);
@@ -64,6 +65,37 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         getServer().getScheduler().runTaskTimer(this, this::saveOnlinePlaytime, 20L * 60L, 20L * 60L);
 
         getLogger().info("Tags enabled. Available tags: " + String.join(", ", getConfiguredTags()));
+    }
+
+    private void ensureConfiguredTags() {
+        // Add newly introduced tags to an existing server config without overwriting custom settings.
+        Map<String, String[]> defaults = new java.util.LinkedHashMap<>();
+        defaults.put("helper", new String[]{"HELPER", "70", "#32CD32"});
+        defaults.put("discord-mod", new String[]{"DISCORD MOD", "60", "#00008B"});
+        defaults.put("chad", new String[]{"CHAD", "55", "#555555"});
+        defaults.put("social-media-manager", new String[]{"SOCIAL MEDIA MANAGER", "65", "#00008B"});
+        defaults.put("schiavo", new String[]{"SLAVE", "30", "#AA00AA"});
+        defaults.put("new", new String[]{"NEW", "16", "#AAAAAA"});
+        defaults.put("member", new String[]{"MEMBER", "17", "#55FF55"});
+        defaults.put("veteran", new String[]{"VETERAN", "18", "#55FFFF"});
+        defaults.put("elite", new String[]{"ELITE", "19", "#AA00AA"});
+        defaults.put("legend", new String[]{"LEGEND", "20", "#FFAA00"});
+
+        boolean changed = false;
+        for (Map.Entry<String, String[]> entry : defaults.entrySet()) {
+            String path = "tags." + entry.getKey();
+            if (!getConfig().isConfigurationSection(path)) {
+                getConfig().set(path + ".display", entry.getValue()[0]);
+                getConfig().set(path + ".priority", Integer.parseInt(entry.getValue()[1]));
+                getConfig().set(path + ".color", entry.getValue()[2]);
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            saveConfig();
+            reloadConfig();
+        }
     }
 
     @Override
