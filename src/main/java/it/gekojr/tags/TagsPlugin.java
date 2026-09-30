@@ -3,7 +3,6 @@ package it.gekojr.tags;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -513,6 +512,13 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         return new TagInfo(display, color);
     }
 
+    private boolean isBoldTag(String tag) {
+        return tag != null && switch (tag.toLowerCase()) {
+            case "owner", "co-owner", "admin", "helper", "social-media-manager", "discord-mod", "legend" -> true;
+            default -> false;
+        };
+    }
+
     public Component renderTag(String tag) {
         ConfigurationSection section = getTagConfig(tag);
         if (section == null) return Component.empty();
@@ -550,7 +556,7 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
             }
 
             String text = brackets ? "[" + display + "]" : display;
-            result = Component.text(text, color).decorate(TextDecoration.BOLD);
+            result = isBoldTag(tag) ? Component.text(text, color).decorate(net.kyori.adventure.text.format.TextDecoration.BOLD) : Component.text(text, color);
         }
 
         return result;
