@@ -560,13 +560,9 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
 
         String separator = getConfig().getString("chat.separator", " » ");
         TextColor white = TextColor.color(255, 255, 255);
-        TextColor nameColor = tag.equalsIgnoreCase("chad")
-                ? TextColor.color(85, 85, 85)
-                : getTagInfo(tag).color();
-
         Component prefix = renderTag(tag)
                 .append(Component.space())
-                .append(Component.text(player.getName(), nameColor))
+                .append(renderPlayerName(player, tag))
                 .append(Component.text(separator, white));
 
         event.renderer((source, sourceDisplayName, message, viewer) ->
@@ -590,6 +586,30 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
     public String displayName(String tag) {
         ConfigurationSection section = getTagConfig(tag);
         return section == null ? tag : section.getString("display", tag.toUpperCase());
+    }
+
+
+    private Component renderPlayerName(Player player, String tag) {
+        String name = player.getName();
+        Component result = Component.empty();
+
+        if (tag.equalsIgnoreCase("schiavo")) {
+            TextColor white = TextColor.color(255, 255, 255);
+            TextColor gray = TextColor.color(85, 85, 85);
+
+            for (int i = 0; i < name.length(); i++) {
+                TextColor color = (i % 2 == 0) ? white : gray;
+                result = result.append(Component.text(String.valueOf(name.charAt(i)), color)
+                        .decorate(TextDecoration.BOLD));
+            }
+            return result;
+        }
+
+        TextColor nameColor = tag.equalsIgnoreCase("chad")
+                ? TextColor.color(85, 85, 85)
+                : getTagInfo(tag).color();
+
+        return Component.text(name, nameColor).decorate(TextDecoration.BOLD);
     }
 
     public record TagInfo(String display, TextColor color) {}
