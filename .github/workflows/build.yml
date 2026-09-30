@@ -22,14 +22,16 @@ jobs:
       - name: Build
         run: mvn -B clean package
 
-      - name: Create checksum
-        run: sha256sum target/Tags.jar > target/Tags.jar.sha256
+      - name: Create plugin bundle
+        run: |
+          mkdir -p release
+          cp target/Tags.jar release/Tags.jar
+          sha256sum release/Tags.jar > release/Tags.jar.sha256
 
-      - name: Upload plugin package
+      - name: Upload plugin bundle
         uses: actions/upload-artifact@v4
         with:
-          name: Tags-plugin
-          path: |
-            target/Tags.jar
-            target/Tags.jar.sha256
+          name: Tags-plugin-bundle
+          path: release/
           if-no-files-found: error
+          compression-level: 0
