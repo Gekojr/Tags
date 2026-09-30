@@ -40,6 +40,7 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         saveDefaultConfig();
         ensureConfiguredTags();
         loadData();
+        removeDeletedTag("schiavo");
 
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new TagMenu(this), this);
@@ -68,6 +69,16 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         getLogger().info("Tags enabled. Available tags: " + String.join(", ", getConfiguredTags()));
     }
 
+    private void removeDeletedTag(String tag) {
+        String normalized = tag.toLowerCase();
+        boolean changed = false;
+        for (LinkedHashSet<String> tags : playerTags.values()) {
+            if (tags.remove(normalized)) changed = true;
+        }
+        selectedTags.entrySet().removeIf(entry -> normalized.equals(entry.getValue()));
+        if (changed) saveData();
+    }
+
     private void ensureConfiguredTags() {
         // Add newly introduced tags to an existing server config without overwriting custom settings.
         Map<String, String[]> defaults = new java.util.LinkedHashMap<>();
@@ -75,8 +86,7 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         defaults.put("discord-mod", new String[]{"DISCORD MOD", "60", "#00008B"});
         defaults.put("chad", new String[]{"CHAD", "55", "#555555"});
         defaults.put("social-media-manager", new String[]{"SOCIAL MEDIA MANAGER", "65", "#00008B"});
-        defaults.put("schiavo", new String[]{"SLAVE", "30", "#AA00AA"});
-        defaults.put("new", new String[]{"NEW", "16", "#AAAAAA"});
+                defaults.put("new", new String[]{"NEW", "16", "#AAAAAA"});
         defaults.put("member", new String[]{"MEMBER", "17", "#55FF55"});
         defaults.put("veteran", new String[]{"VETERAN", "18", "#55FFFF"});
         defaults.put("elite", new String[]{"ELITE", "19", "#AA00AA"});
