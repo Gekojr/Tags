@@ -515,7 +515,7 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
 
     private boolean isBoldTag(String tag) {
         return tag != null && switch (tag.toLowerCase()) {
-            case "owner", "co-owner", "admin", "helper", "social-media-manager", "discord-mod", "legend" -> true;
+            case "admin", "legend" -> true;
             default -> false;
         };
     }
@@ -611,8 +611,7 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
 
             for (int i = 0; i < name.length(); i++) {
                 TextColor color = (i % 2 == 0) ? white : gray;
-                result = result.append(Component.text(String.valueOf(name.charAt(i)), color)
-                        .decorate(TextDecoration.BOLD));
+                result = result.append(Component.text(String.valueOf(name.charAt(i)), color));
             }
             return result;
         }
@@ -621,7 +620,7 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
                 ? TextColor.color(85, 85, 85)
                 : getTagInfo(tag).color();
 
-        return Component.text(name, nameColor).decorate(TextDecoration.BOLD);
+        return Component.text(name, nameColor);
     }
 
     public record TagInfo(String display, TextColor color) {}
