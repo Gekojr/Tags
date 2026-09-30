@@ -519,7 +519,7 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
 
         if (tag.equalsIgnoreCase("schiavo")) {
             TextColor white = TextColor.color(255, 255, 255);
-            TextColor accent = TextColor.color(170, 0, 170);
+            TextColor accent = TextColor.color(85, 85, 85);
 
             Component letters = Component.empty();
             for (int i = 0; i < display.length(); i++) {
