@@ -133,7 +133,7 @@ public final class TagMenu implements Listener {
 
     private boolean isBoldTag(String tag) {
         return tag != null && switch (tag.toLowerCase()) {
-            case "owner", "co-owner", "admin", "helper", "social-media-manager", "discord-mod", "legend" -> true;
+            case "admin", "legend" -> true;
             default -> false;
         };
     }
