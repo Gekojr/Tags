@@ -377,6 +377,11 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
 
         if (tags.add(playtimeTag)) {
             saveData();
+
+            String display = displayName(playtimeTag);
+            player.sendMessage(Component.text("Nametag unlocked: ", TextColor.color(255, 255, 255))
+                    .append(renderTag(playtimeTag))
+                    .append(Component.text("!", TextColor.color(255, 255, 255))));
         }
     }
 
