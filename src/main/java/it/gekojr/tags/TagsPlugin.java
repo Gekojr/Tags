@@ -85,14 +85,27 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         defaults.put("helper", new String[]{"HELPER", "70", "#32CD32"});
         defaults.put("discord-mod", new String[]{"DISCORD MOD", "60", "#00008B"});
         defaults.put("chad", new String[]{"CHAD", "55", "#555555"});
-        defaults.put("social-media-manager", new String[]{"SOCIAL MEDIA MANAGER", "65", "#00008B"});
-                defaults.put("new", new String[]{"NEW", "16", "#AAAAAA"});
+        defaults.put("social-media-manager", new String[]{"SOCIAL MEDIA MANAGER", "65", "#32145F"});
+                defaults.put("new", new String[]{"NEW", "16", "#FFFFFF"});
         defaults.put("member", new String[]{"MEMBER", "17", "#55FF55"});
         defaults.put("veteran", new String[]{"VETERAN", "18", "#55FFFF"});
         defaults.put("elite", new String[]{"ELITE", "19", "#AA00AA"});
         defaults.put("legend", new String[]{"LEGEND", "20", "#FFAA00"});
 
         boolean changed = false;
+
+        // Update these colors on existing server configs too.
+        if (getConfig().isConfigurationSection("tags.social-media-manager")
+                && !"#32145F".equalsIgnoreCase(getConfig().getString("tags.social-media-manager.color", ""))) {
+            getConfig().set("tags.social-media-manager.color", "#32145F");
+            changed = true;
+        }
+        if (getConfig().isConfigurationSection("tags.new")
+                && !"#FFFFFF".equalsIgnoreCase(getConfig().getString("tags.new.color", ""))) {
+            getConfig().set("tags.new.color", "#FFFFFF");
+            changed = true;
+        }
+
         for (Map.Entry<String, String[]> entry : defaults.entrySet()) {
             String path = "tags." + entry.getKey();
             if (!getConfig().isConfigurationSection(path)) {
