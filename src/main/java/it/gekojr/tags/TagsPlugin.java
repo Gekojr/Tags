@@ -515,7 +515,7 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
 
     private boolean isBoldTag(String tag) {
         return tag != null && switch (tag.toLowerCase()) {
-            case "admin", "legend" -> true;
+            case "owner", "co-owner", "admin", "helper", "social-media-manager", "discord-mod" -> true;
             default -> false;
         };
     }
