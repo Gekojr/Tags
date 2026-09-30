@@ -34,10 +34,6 @@ tags:
     display: "CHAD"
     priority: 55
     color: "#555555"
-  schiavo:
-    display: "SLAVE"
-    priority: 30
-    color: "#AA00AA"
   new:
     display: "NEW"
     priority: 16
