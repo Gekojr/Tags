@@ -5,9 +5,6 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,10 +22,14 @@ jobs:
       - name: Build
         run: mvn -B clean package
 
-      - name: Publish JAR release
-        uses: softprops/action-gh-release@v2
+      - name: Create checksum
+        run: sha256sum target/Tags.jar > target/Tags.jar.sha256
+
+      - name: Upload plugin package
+        uses: actions/upload-artifact@v4
         with:
-          tag_name: build-${{ github.run_number }}
-          name: Tags Build ${{ github.run_number }}
-          prerelease: true
-          files: target/Tags.jar
+          name: Tags-plugin
+          path: |
+            target/Tags.jar
+            target/Tags.jar.sha256
+          if-no-files-found: error
