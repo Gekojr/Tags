@@ -3,6 +3,7 @@ package it.gekojr.tags;
 import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -528,9 +529,9 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
 
             result = letters;
             if (brackets) {
-                result = Component.text("[", white)
+                result = Component.text("[", white).decorate(net.kyori.adventure.text.format.TextDecoration.BOLD)
                         .append(result)
-                        .append(Component.text("]", white));
+                        .append(Component.text("]", white).decorate(net.kyori.adventure.text.format.TextDecoration.BOLD));
             }
         } else {
             TextColor color;
@@ -544,7 +545,7 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
             }
 
             String text = brackets ? "[" + display + "]" : display;
-            result = Component.text(text, color);
+            result = Component.text(text, color).decorate(TextDecoration.BOLD);
         }
 
         return result;
