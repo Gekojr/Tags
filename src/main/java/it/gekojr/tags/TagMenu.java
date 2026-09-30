@@ -2,7 +2,6 @@ package it.gekojr.tags;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
-import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -76,7 +75,7 @@ public final class TagMenu implements Listener {
             ItemMeta meta = item.getItemMeta();
 
             TextColor menuColor = tag.equalsIgnoreCase("chad") ? TextColor.color(85, 85, 85) : info.color();
-            Component display = Component.text(info.display(), menuColor).decorate(TextDecoration.BOLD);
+            Component display = isBoldTag(tag) ? Component.text(info.display(), menuColor).decorate(net.kyori.adventure.text.format.TextDecoration.BOLD) : Component.text(info.display(), menuColor);
             if (tag.equalsIgnoreCase(selected)) {
                 display = display.append(Component.text("  ✓", TextColor.color(85, 255, 85)));
             }
@@ -85,7 +84,7 @@ public final class TagMenu implements Listener {
             meta.lore(List.of(
                     Component.text(""),
                     Component.text("Title: ", TextColor.color(170, 170, 170))
-                            .append(Component.text(info.display(), menuColor).decorate(TextDecoration.BOLD)),
+                            .append(Component.text(info.display(), menuColor)),
                     Component.text(""),
                     tag.equalsIgnoreCase(selected)
                             ? Component.text("Currently selected", TextColor.color(85, 255, 85))
@@ -130,6 +129,13 @@ public final class TagMenu implements Listener {
         }
 
         player.openInventory(inventory);
+    }
+
+    private boolean isBoldTag(String tag) {
+        return tag != null && switch (tag.toLowerCase()) {
+            case "owner", "co-owner", "admin", "helper", "social-media-manager", "discord-mod", "legend" -> true;
+            default -> false;
+        };
     }
 
     @EventHandler
