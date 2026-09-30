@@ -29,7 +29,7 @@ tags:
   social-media-manager:
     display: "SOCIAL MEDIA MANAGER"
     priority: 65
-    color: "#00008B"
+    color: "#32145F"
   chad:
     display: "CHAD"
     priority: 55
@@ -37,7 +37,7 @@ tags:
   new:
     display: "NEW"
     priority: 16
-    color: "#AAAAAA"
+    color: "#FFFFFF"
   member:
     display: "MEMBER"
     priority: 17
