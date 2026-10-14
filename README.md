@@ -1,3 +1,9 @@
+# Tags — Fabric 26.2
+
+La versione Fabric è in [`fabric/`](fabric/README.md). Per compilare: `cd fabric && ./gradlew build`.
+
+## Documentazione del plugin Paper originale
+
 # Tags
 
 Paper 26.3 plugin for multiple selectable chat nametags.
@@ -37,3 +43,4 @@ The player can later use **/tag** to choose the nametag.
 - DONATOR — cyan
 
 The plugin stores ownership and the selected nametag in `plugins/Tags/data.yml`.
+
