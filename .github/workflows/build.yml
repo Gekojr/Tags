@@ -1,37 +1,83 @@
-name: Build Tags
+name: Paper build and download
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: paper-build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Java 25
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
           cache: maven
-
-      - name: Build
+      - name: Build Paper plugin
         run: mvn -B clean package
-
-      - name: Create plugin bundle
+      - name: Prepare Minekeep download
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p release
-          cp target/Tags.jar release/Tags.jar
-          sha256sum release/Tags.jar > release/Tags.jar.sha256
-
-      - name: Upload plugin bundle
-        uses: actions/upload-artifact@v4
+          mapfile -t jars < <(find target -maxdepth 1 -type f -name '*.jar' ! -name '*-sources.jar' ! -name '*-javadoc.jar' ! -name 'original-*' | sort)
+          test "${#jars[@]}" -eq 1
+          cp "${jars[0]}" release/Tags.jar
+          jar tf release/Tags.jar > jar-contents.txt
+          grep -Fxq 'plugin.yml' jar-contents.txt
+          if grep -Fxq 'fabric.mod.json' jar-contents.txt; then
+            echo "Expected a Paper plugin, found a Fabric mod" >&2
+            exit 1
+          fi
+          (cd release && sha256sum Tags.jar > Tags.jar.sha256)
+      - uses: actions/upload-artifact@v4
         with:
-          name: Tags-plugin-bundle
+          name: Tags-Paper-26.3
           path: release/
           if-no-files-found: error
           compression-level: 0
+
+  publish:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Tags-Paper-26.3
+          path: release
+      - name: Publish reference download
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd release && sha256sum --check Tags.jar.sha256)
+          tag="paper-26.3-build-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}"
+          {
+            echo "Build Paper di riferimento per Minekeep."
+            echo
+            echo "Scarica Tags.jar dagli Assets e caricalo in plugins/ con il server fermo."
+            echo "Richiede un server Paper 26.3 con Java 25."
+            echo
+            echo "Commit: ${GITHUB_SHA}"
+            echo "Build: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          } > release-notes.md
+          gh release create "$tag" "release/Tags.jar" "release/Tags.jar.sha256" \
+            --target "$GITHUB_SHA" --latest \
+            --title "Tags - Paper 26.3 - build ${GITHUB_RUN_NUMBER}" \
+            --notes-file release-notes.md
