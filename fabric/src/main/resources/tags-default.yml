@@ -1,0 +1,78 @@
+# Tags plugin configuration
+# Colors use Minecraft hex colors.
+
+tags:
+  owner:
+    display: "OWNER"
+    priority: 100
+    color: "#AA0000"
+  co-owner:
+    display: "CO-OWNER"
+    priority: 90
+    color: "#FF5555"
+  admin:
+    display: "ADMIN"
+    priority: 80
+    color: "#FFAA00"
+  helper:
+    display: "HELPER"
+    priority: 70
+    color: "#32CD32"
+  discord-mod:
+    display: "DISCORD MOD"
+    priority: 60
+    color: "#00008B"
+  donator:
+    display: "DONATOR"
+    priority: 50
+    color: "#55FFFF"
+  social-media-manager:
+    display: "SOCIAL MEDIA MANAGER"
+    priority: 65
+    color: "#32145F"
+  chad:
+    display: "CHAD"
+    priority: 55
+    color: "#555555"
+  new:
+    display: "NEW"
+    priority: 16
+    color: "#FFFFFF"
+  member:
+    display: "MEMBER"
+    priority: 17
+    color: "#55FF55"
+  veteran:
+    display: "VETERAN"
+    priority: 18
+    color: "#55FFFF"
+  elite:
+    display: "ELITE"
+    priority: 19
+    color: "#AA00AA"
+  legend:
+    display: "LEGEND"
+    priority: 20
+    color: "#FFAA00"
+
+# Automatic nametags based on total playtime.
+# The highest reached tier is used automatically in chat.
+# time is expressed in hours.
+playtime:
+  enabled: true
+  tiers:
+    - hours: 0
+      tag: "new"
+    - hours: 10
+      tag: "member"
+    - hours: 25
+      tag: "veteran"
+    - hours: 50
+      tag: "elite"
+    - hours: 100
+      tag: "legend"
+
+chat:
+  separator: " » "
+  tag-brackets: true
+

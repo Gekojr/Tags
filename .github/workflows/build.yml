@@ -1,37 +1,27 @@
-name: Build Tags
-
+name: Fabric 26.2 build
 on:
   push:
-    branches: [ main ]
+  pull_request:
   workflow_dispatch:
-
+permissions:
+  contents: read
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Java 25
-        uses: actions/setup-java@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
-          cache: maven
-
-      - name: Build
-        run: mvn -B clean package
-
-      - name: Create plugin bundle
-        run: |
-          mkdir -p release
-          cp target/Tags.jar release/Tags.jar
-          sha256sum release/Tags.jar > release/Tags.jar.sha256
-
-      - name: Upload plugin bundle
-        uses: actions/upload-artifact@v4
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build and test Fabric mod
+        working-directory: fabric
+        run: ./gradlew build
+      - uses: actions/upload-artifact@v4
         with:
-          name: Tags-plugin-bundle
-          path: release/
+          name: Tags-Fabric-26.2
+          path: |
+            fabric/build/libs/*.jar
+            !fabric/build/libs/*-sources.jar
           if-no-files-found: error
-          compression-level: 0
