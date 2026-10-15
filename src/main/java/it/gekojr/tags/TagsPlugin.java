@@ -595,9 +595,11 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
 
         String separator = getConfig().getString("chat.separator", " » ");
         TextColor white = TextColor.color(255, 255, 255);
-        Component prefix = renderTag(tag)
-                .append(Component.space())
-                .append(renderPlayerName(player, tag))
+        Component prefix = Component.empty()
+                .decoration(TextDecoration.BOLD, false)
+                .append(renderTag(tag)
+                        .append(Component.space())
+                        .append(renderPlayerName(player, tag)))
                 .append(Component.text(separator, white));
 
         event.renderer((source, sourceDisplayName, message, viewer) ->
@@ -648,3 +650,4 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
 
     public record TagInfo(String display, TextColor color) {}
 }
+
