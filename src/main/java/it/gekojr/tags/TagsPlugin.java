@@ -597,9 +597,9 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
         TextColor white = TextColor.color(255, 255, 255);
         Component prefix = Component.empty()
                 .decoration(TextDecoration.BOLD, false)
-                .append(renderTag(tag))
-                .append(Component.space())
-                .append(renderPlayerName(player, tag))
+                .append(renderTag(tag)
+                        .append(Component.space())
+                        .append(renderPlayerName(player, tag)))
                 .append(Component.text(separator, white));
 
         event.renderer((source, sourceDisplayName, message, viewer) ->
@@ -650,3 +650,4 @@ public final class TagsPlugin extends JavaPlugin implements Listener {
 
     public record TagInfo(String display, TextColor color) {}
 }
+
